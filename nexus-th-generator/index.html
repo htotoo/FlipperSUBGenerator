@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flipper Zero - Nexus-TH generator</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+  }
+  h1 {
+    background-color: #007bff;
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+  }
+  h3 {
+    font-size: 1.2rem;
+    margin-top: 20px;
+    color: #333;
+  }
+  label {
+    font-weight: bold;
+  }
+  input[type="checkbox"],
+  input[type="number"],
+  select {
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #0056b3;
+  }
+  #ered {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+  }
+  #savefile {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+  }
+  #savefile:hover {
+    background-color: #0056b3;
+  }
+</style>
+<script>
+
+	function convert4BitToHexString(data) {
+	  if (/^[01]{4}$/.test(data)) {
+		const decimalValue = parseInt(data, 2);
+		const hexString = decimalValue.toString(16).toUpperCase();
+		return hexString;
+	  }
+	  return "";
+	}
+	function intTo12BitHex(number) {
+		let intnum = Math.floor(number);
+		let hexString = intnum.toString(16);
+		while (hexString.length < 3) {
+			hexString = '0' + hexString;
+		}
+		return hexString.toUpperCase();
+	}
+
+  function Generate()
+  {
+	var battok= document.getElementById('batt').checked;
+	var hum= document.getElementById('hum').value;
+	var chan= document.getElementById('chan').value;
+	var temp= document.getElementById('temp').value;
+	var ts = "1695295256";
+	var data = "4 7";
+	var _flag = (battok?"1":"0") + "0";
+	if (chan == 1) _flag +="00";
+	if (chan == 2) _flag +="01";
+	if (chan == 3) _flag +="10";
+	data = data + convert4BitToHexString(_flag);
+	//add temp:
+	var tempstr = intTo12BitHex(temp*10);
+	data = data + " " + tempstr[0] + tempstr[1]  + " " +  tempstr[2];
+	//add const
+	data = data + "F ";
+	//add hum
+	var humint = parseInt(hum);
+	data = data + humint.toString(16).toUpperCase();
+	var txtResult = "Filetype: Flipper SubGhz Key File\x0aVersion: 1\x0aFrequency: 433920000\x0aPreset: FuriHalSubGhzPresetOok650Async\x0aProtocol: Nexus-TH\x0aId: 71\x0aBit: 36\x0aData: 00 00 00 0" + data;
+	//todo add more Data
+	txtResult = txtResult + "\x0aBatt: " + (battok?"0":"1");
+	txtResult = txtResult + "\x0aHum: " + hum.toString();
+	txtResult = txtResult + "\x0aTs: " + ts.toString();
+	txtResult = txtResult + "\x0aCh: " + chan.toString();
+	txtResult = txtResult + "\x0aBtn: 255";
+	txtResult = txtResult + "\x0aTemp: " + temp.toString();
+	txtResult = txtResult + "\x0a";
+	document.getElementById('ered').innerHTML = txtResult;
+  }
+ </script>
+</head>
+<body>
+<h1>Generate a Flipper Zero SUB file for the weather protocol Nexus-TH</h1>
+<div id="settings">
+  <h3>Settings</h3>
+  <label for="batt">Battery ok:</label>
+  <input type="checkbox" id="batt" name="batt" checked /><br/>
+  <label for="temp">Temperature:</label>
+  <input type="number" id="temp" step="0.1" name="temp" min="-50" max="100" value="27.2" /><br/>
+  <label for="hum">Humidity %:</label>
+  <input type="number" id="hum" name="hum" min="0" max="100" value="44" /><br/>
+  <label for="chan">Channel:</label>
+  <select id="chan" name="chan">
+    <option value="1" selected>Ch 1</option>
+    <option value="2">Ch 2</option>
+    <option value="3">Ch 3</option>
+  </select><br/><br/>
+  <button onclick="Generate()">Generate</button>
+</div>
+<div id="result">
+  <br/><br/>
+  <b>Flipper output file:</b><br/>
+  <pre id="ered">
+Filetype: Flipper SubGhz Key File
+Version: 1
+Frequency: 433920000
+Preset: FuriHalSubGhzPresetOok650Async
+Protocol: Nexus-TH
+Id: 71
+Bit: 36
+Data: 00 00 00 04 78 11 0F 2C
+Batt: 0
+Hum: 44
+Ts: 1695295256
+Ch: 1
+Btn: 255
+Temp: 27.2
+  </pre>
+  <button id="savefile">Save file</button>
+</div>
+<script>
+document.getElementById('savefile').addEventListener('click', function () {
+  var textToSave = document.getElementById('ered').innerText;
+  var blob = new Blob([textToSave], { type: 'text/plain' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'nexus-th.sub';
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>
